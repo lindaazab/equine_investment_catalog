@@ -293,47 +293,75 @@
 
     .video-title { font-size: 0.9rem; margin-bottom: 10px; font-weight: 500; }
 
-.image-gallery {
-  display: flex;
-  gap: 15px;
-  margin-top: 20px;
-  overflow-x: auto;
-  padding-bottom: 10px;
-  scroll-snap-type: x mandatory;
-}
+    /* ✅ Carousel wrapper with arrows + drag-to-scroll */
+    .gallery-wrapper {
+      position: relative;
+      margin-top: 18px;
+    }
 
-.image-gallery::-webkit-scrollbar {
-  height: 8px;
-}
+    .image-gallery {
+      display: flex;
+      gap: 14px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 6px 44px 12px; /* room for arrows */
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-gutter: stable;
+      max-width: 100%;
+      cursor: grab;
+      user-select: none;
+    }
 
-.image-gallery::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.2);
-  border-radius: 4px;
-}
+    .image-gallery.dragging {
+      cursor: grabbing;
+    }
 
-.gallery-image {
-  flex: 0 0 auto;
-  width: 260px;
-  height: 200px;
-  object-fit: cover;
-  border-radius: 8px;
-  cursor: pointer;
-  scroll-snap-align: center;
-  transition: transform 0.3s ease;
-}
-
+    .image-gallery::-webkit-scrollbar { height: 8px; }
+    .image-gallery::-webkit-scrollbar-thumb {
+      background: rgba(0,0,0,0.2);
+      border-radius: 4px;
+    }
 
     .gallery-image {
-      width: 100%;
+      flex: 0 0 auto;
+      width: 260px;
       height: 200px;
       object-fit: cover;
       border-radius: 8px;
-      cursor: pointer;
-      transition: transform 0.3s ease;
+      scroll-snap-align: center;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: transform 0.25s ease;
+      pointer-events: auto;
     }
 
-    .gallery-image:hover { transform: scale(1.05); }
+    .gallery-image:hover { transform: scale(1.03); }
+
+    .gallery-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(27, 58, 107, 0.92);
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.22);
+      z-index: 2;
+    }
+
+    .gallery-arrow:hover {
+      background: rgba(123, 34, 64, 0.95);
+    }
+
+    .gallery-arrow.left { left: 8px; }
+    .gallery-arrow.right { right: 8px; }
 
     .notes-box {
       background: var(--light-cream);
@@ -398,6 +426,7 @@
       .modal-content { margin: 20px; }
       .modal-body { padding: 25px; }
       .info-grid { grid-template-columns: 1fr; }
+      .gallery-image { width: 220px; height: 170px; }
     }
   </style>
 </head>
@@ -412,12 +441,9 @@
   </div>
 
   <div class="container">
-    <div class="horses-grid" id="horsesGrid">
-      <!-- Horse cards will be dynamically generated -->
-    </div>
+    <div class="horses-grid" id="horsesGrid"></div>
   </div>
 
-  <!-- Modal -->
   <div class="modal" id="horseModal">
     <div class="modal-content">
       <div class="modal-header">
@@ -430,21 +456,10 @@
   </div>
 
   <script>
-    // ROI targets requested:
-    // 20% if sold in 3 months, 12% if sold in 6 months
-    const roiTargets = {
-      3: 0.20,
-      6: 0.12
-    };
+    const roiTargets = { 3: 0.20, 6: 0.12 };
 
-    // Exchange rates with automatic updates
-    const exchangeRates = {
-      EUR: 1.17,
-      GBP: 1.27,
-      USD: 1.00
-    };
+    const exchangeRates = { EUR: 1.17, GBP: 1.27, USD: 1.00 };
 
-    // Fetch current exchange rates from API
     async function updateExchangeRates() {
       try {
         const response = await fetch('https://v6.exchangerate-api.com/v6/5291ccc35d8f81cceaf1fb15/latest/USD');
@@ -452,23 +467,20 @@
         if (data.result === 'success') {
           exchangeRates.EUR = 1 / data.conversion_rates.EUR;
           exchangeRates.GBP = 1 / data.conversion_rates.GBP;
-          console.log('Exchange rates updated:', exchangeRates);
           init();
         }
-      } catch (error) {
+      } catch (e) {
         console.log('Using default exchange rates');
       }
     }
 
-    // Default monthly costs (can be overridden per horse)
     const defaultMonthlyCosts = {
       board: 1500,
-      insurance: 350, // Default, but each horse can have custom insurance
+      insurance: 350,
       shows: 2000,
       shoeing: 350
     };
 
-    // Horse data
     const horses = [
       {
         name: "Ridge Douglas Lady",
@@ -507,7 +519,6 @@
         }
       },
 
-      // ✅ NEW 3rd horse
       {
         name: "Ridge Douglas Lady 2",
         gender: "Mare",
@@ -545,7 +556,6 @@
         }
       },
 
-      // ✅ NEW 4th horse
       {
         name: "Ridge Douglas Lady 3",
         gender: "Mare",
@@ -557,7 +567,7 @@
         expectedResale: { usd: 200000 },
         experience: "1.35m FEI Young Riders; 1.40m National GP",
         location: "Ireland",
-         cardImage: "WhatsApp Image 2026-02-03 at 3.34.06 AM (2).jpeg",
+        cardImage: "WhatsApp Image 2026-02-03 at 3.34.06 AM (2).jpeg",
         galleryImages: [
           "RidgeDouglasLady_Pic_1.jpg",
           "RidgeDouglasLAdy_Breeding.jpg",
@@ -615,25 +625,19 @@
       }
     ];
 
-    // Helper: convert currency to USD
-    function toUSD(amount, currency) {
-      return amount * exchangeRates[currency];
-    }
+    function toUSD(amount, currency) { return amount * exchangeRates[currency]; }
 
-    // Helper: format currency
     function formatCurrency(amount, currency) {
       const symbols = { EUR: '€', GBP: '£', USD: '$' };
       return `${symbols[currency]}${Number(amount).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
     }
 
-    // Helper: price with both currencies
     function formatPriceDisplay(amount, currency) {
       if (currency === 'USD') return formatCurrency(amount, currency);
       const usdAmount = toUSD(amount, currency);
       return `${formatCurrency(amount, currency)} (~${formatCurrency(usdAmount, 'USD')})`;
     }
 
-    // Total import costs in USD
     function calculateTotalImportCosts(horse) {
       const basePrice = toUSD(horse.price, horse.currency);
       const vetting = toUSD(horse.importCosts.vetting.amount, horse.importCosts.vetting.currency);
@@ -641,39 +645,20 @@
       const quarantine = toUSD(horse.importCosts.quarantine.amount, horse.importCosts.quarantine.currency);
       const tariffs = toUSD(horse.importCosts.tariffs.amount, horse.importCosts.tariffs.currency);
 
-      return {
-        basePrice,
-        vetting,
-        transport,
-        quarantine,
-        tariffs,
-        totalInitial: basePrice + vetting + transport + quarantine + tariffs
-      };
+      return { basePrice, vetting, transport, quarantine, tariffs, totalInitial: basePrice + vetting + transport + quarantine + tariffs };
     }
 
-    // Holding cost helper (reused by target resale calcs)
     function calculateHoldingCosts(horse, months) {
       const monthlyExpenses = defaultMonthlyCosts.board + horse.insurance + defaultMonthlyCosts.shows;
-
-      // Shoeing costs (upon arrival + every ~6 weeks)
       let shoeingCosts = 0;
       const shoeingMonths = [1, 2, 4, 5, 7, 8, 10, 11, 13, 14, 16, 17, 19, 20, 22, 23];
-      for (let month = 1; month <= Math.ceil(months); month++) {
-        if (shoeingMonths.includes(month)) shoeingCosts += defaultMonthlyCosts.shoeing;
-      }
-
-      return {
-        monthlyExpenses,
-        shoeingCosts,
-        totalHolding: (monthlyExpenses * months) + shoeingCosts
-      };
+      for (let month = 1; month <= Math.ceil(months); month++) if (shoeingMonths.includes(month)) shoeingCosts += defaultMonthlyCosts.shoeing;
+      return { monthlyExpenses, shoeingCosts, totalHolding: (monthlyExpenses * months) + shoeingCosts };
     }
 
-    // ROI calculator for a specific resale price
     function calculateROIWithResale(horse, months, resalePriceUSD) {
       const costs = calculateTotalImportCosts(horse);
       const holding = calculateHoldingCosts(horse, months);
-
       const totalInvestment = costs.totalInitial + holding.totalHolding;
 
       const sellerCommissionAmount = resalePriceUSD * horse.sellerCommission;
@@ -682,35 +667,16 @@
       const profit = netProceeds - totalInvestment;
       const roiPercent = (profit / totalInvestment) * 100;
 
-      return {
-        totalInvestment,
-        netProceeds,
-        profit,
-        roiPercent,
-        sellerCommissionAmount,
-        monthlyExpenses: holding.monthlyExpenses,
-        shoeingCosts: holding.shoeingCosts
-      };
+      return { totalInvestment, netProceeds, profit, roiPercent };
     }
 
-    // Required resale price (gross) to meet target ROI
     function requiredResalePriceForTargetROI(horse, months, targetROI) {
       const costs = calculateTotalImportCosts(horse);
       const holding = calculateHoldingCosts(horse, months);
-
       const totalInvestment = costs.totalInitial + holding.totalHolding;
-
-      // Need netProceeds = totalInvestment * (1 + targetROI)
       const requiredNetProceeds = totalInvestment * (1 + targetROI);
-
-      // netProceeds = resale * (1 - commission)
       const requiredResale = requiredNetProceeds / (1 - horse.sellerCommission);
-
-      return {
-        requiredResale,
-        totalInvestment,
-        requiredNetProceeds
-      };
+      return { requiredResale };
     }
 
     function createHorseCard(horse, index) {
@@ -719,7 +685,6 @@
       card.onclick = () => openModal(index);
 
       const priceDisplay = formatPriceDisplay(horse.price, horse.currency);
-
       const imageHtml = horse.cardImage
         ? `<img src="${horse.cardImage}" alt="${horse.name}" style="width: 100%; height: 240px; object-fit: cover;">`
         : `<div class="horse-image-placeholder">${horse.name.charAt(0)}</div>`;
@@ -729,21 +694,65 @@
         <div class="horse-info">
           <h3 class="horse-name">${horse.name}</h3>
           <div class="horse-details">
-            <div class="detail-item">
-              <span class="detail-label">Gender</span>
-              <span class="detail-value">${horse.gender}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">Age</span>
-              <span class="detail-value">${horse.age} years</span>
-            </div>
+            <div class="detail-item"><span class="detail-label">Gender</span><span class="detail-value">${horse.gender}</span></div>
+            <div class="detail-item"><span class="detail-label">Age</span><span class="detail-value">${horse.age} years</span></div>
           </div>
           <div class="horse-experience">${horse.experience}</div>
           <div class="horse-price">${priceDisplay}</div>
         </div>
       `;
-
       return card;
+    }
+
+    function attachGalleryInteractions(wrapperEl) {
+      const gallery = wrapperEl.querySelector('.image-gallery');
+      const leftBtn = wrapperEl.querySelector('.gallery-arrow.left');
+      const rightBtn = wrapperEl.querySelector('.gallery-arrow.right');
+
+      // Buttons scroll
+      const scrollByAmount = () => Math.max(260 + 14, Math.floor(gallery.clientWidth * 0.8));
+      leftBtn.addEventListener('click', (e) => { e.stopPropagation(); gallery.scrollBy({ left: -scrollByAmount(), behavior: 'smooth' }); });
+      rightBtn.addEventListener('click', (e) => { e.stopPropagation(); gallery.scrollBy({ left: scrollByAmount(), behavior: 'smooth' }); });
+
+      // Drag to scroll (desktop)
+      let isDown = false;
+      let startX = 0;
+      let startScrollLeft = 0;
+      let moved = false;
+
+      gallery.addEventListener('pointerdown', (e) => {
+        isDown = true;
+        moved = false;
+        gallery.classList.add('dragging');
+        startX = e.clientX;
+        startScrollLeft = gallery.scrollLeft;
+        gallery.setPointerCapture(e.pointerId);
+      });
+
+      gallery.addEventListener('pointermove', (e) => {
+        if (!isDown) return;
+        const dx = e.clientX - startX;
+        if (Math.abs(dx) > 6) moved = true;
+        gallery.scrollLeft = startScrollLeft - dx;
+      });
+
+      const end = () => {
+        isDown = false;
+        gallery.classList.remove('dragging');
+      };
+
+      gallery.addEventListener('pointerup', end);
+      gallery.addEventListener('pointercancel', end);
+
+      // Click to open image (but ignore if dragged)
+      gallery.querySelectorAll('img.gallery-image').forEach(img => {
+        img.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (moved) return; // ignore click if user dragged
+          const url = img.getAttribute('data-full');
+          window.open(url, '_blank');
+        });
+      });
     }
 
     function openModal(index) {
@@ -751,27 +760,17 @@
       const modal = document.getElementById('horseModal');
 
       const priceDisplay = formatPriceDisplay(horse.price, horse.currency);
-      const costs = calculateTotalImportCosts(horse);
+      const expectedResaleUSD = horse.expectedResale?.usd || 0;
 
-      const expectedResaleUSD = (horse.expectedResale && horse.expectedResale.usd)
-        ? horse.expectedResale.usd
-        : 0;
+      const roi3 = calculateROIWithResale(horse, 3, expectedResaleUSD);
+      const roi6 = calculateROIWithResale(horse, 6, expectedResaleUSD);
 
-      // ROI at expected resale value
-      const roi3_expected = calculateROIWithResale(horse, 3, expectedResaleUSD);
-      const roi6_expected = calculateROIWithResale(horse, 6, expectedResaleUSD);
-
-      // Minimum resale needed to hit investor ROI targets
       const req3 = requiredResalePriceForTargetROI(horse, 3, roiTargets[3]);
       const req6 = requiredResalePriceForTargetROI(horse, 6, roiTargets[6]);
 
       document.getElementById('modalHorseName').textContent = horse.name;
       document.getElementById('modalBasicInfo').innerHTML = `
-        <span>${horse.gender}</span>
-        <span>•</span>
-        <span>${horse.age} years old</span>
-        <span>•</span>
-        <span>${priceDisplay}</span>
+        <span>${horse.gender}</span><span>•</span><span>${horse.age} years old</span><span>•</span><span>${priceDisplay}</span>
       `;
 
       function getYouTubeEmbedUrl(url) {
@@ -781,29 +780,22 @@
         return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
       }
 
-      // Calculator URL (uses expected resale by default)
-      const calculatorUrl = `calculator.html?`
-        + `purchasePrice=${costs.basePrice.toFixed(0)}`
-        + `&finderCommission=0`
-        + `&vetCheck=${costs.vetting.toFixed(0)}`
-        + `&transportation=${(costs.transport + costs.quarantine).toFixed(0)}`
-        + `&tariffAmount=${costs.tariffs.toFixed(0)}`
-        + `&monthlyBoard=${defaultMonthlyCosts.board}`
-        + `&monthlyInsurance=${horse.insurance}`
-        + `&monthlyShows=${defaultMonthlyCosts.shows}`
-        + `&shoeing=${defaultMonthlyCosts.shoeing}`
-        + `&fixedSalePrice=${expectedResaleUSD}`
-        + `&sellerCommission=${(horse.sellerCommission * 100).toFixed(1)}`;
-
       document.getElementById('modalBody').innerHTML = `
-        ${horse.galleryImages && horse.galleryImages.length > 0 ? `
+        ${horse.galleryImages?.length ? `
           <div class="info-section">
             <h3>Photos</h3>
-            <div class="image-gallery">
-              ${horse.galleryImages.map(imageUrl => `
-                <img src="${imageUrl}" alt="${horse.name}" class="gallery-image" onclick="window.open('${imageUrl}', '_blank')">
-              `).join('')}
+            <div class="gallery-wrapper" data-gallery="1">
+              <button class="gallery-arrow left" aria-label="Scroll left">‹</button>
+              <div class="image-gallery">
+                ${horse.galleryImages.map(u => `
+                  <img src="${u}" data-full="${u}" alt="${horse.name}" class="gallery-image">
+                `).join('')}
+              </div>
+              <button class="gallery-arrow right" aria-label="Scroll right">›</button>
             </div>
+            <p style="font-size:0.85rem; opacity:0.8; margin-top:8px;">
+              Tip: drag to scroll, or use arrows.
+            </p>
           </div>
         ` : ''}
 
@@ -821,22 +813,18 @@
           </div>
         </div>
 
-        ${horse.videos && horse.videos.length > 0 ? `
+        ${horse.videos?.length ? `
           <div class="info-section">
             <h3>Videos</h3>
             <div class="video-container">
-              ${horse.videos.map(video => {
-                const embedUrl = getYouTubeEmbedUrl(video.url);
+              ${horse.videos.map(v => {
+                const embedUrl = getYouTubeEmbedUrl(v.url);
                 return embedUrl ? `
                   <div>
-                    <div class="video-title">${video.title}</div>
-                    <div class="video-embed">
-                      <iframe src="${embedUrl}" allowfullscreen></iframe>
-                    </div>
+                    <div class="video-title">${v.title}</div>
+                    <div class="video-embed"><iframe src="${embedUrl}" allowfullscreen></iframe></div>
                   </div>
-                ` : `
-                  <a href="${video.url}" target="_blank" class="record-link">${video.title}</a>
-                `;
+                ` : `<a href="${v.url}" target="_blank" class="record-link">${v.title}</a>`;
               }).join('')}
             </div>
           </div>
@@ -848,107 +836,11 @@
         </div>
 
         <div class="info-section">
-          <h3>Investment Overview</h3>
-          <div class="cost-breakdown">
-            <div class="cost-row">
-              <span>Horse Price (${horse.currency})</span>
-              <span>${formatCurrency(horse.price, horse.currency)}</span>
-            </div>
-            <div class="cost-row">
-              <span>Horse Price (USD)</span>
-              <span>${formatCurrency(costs.basePrice, 'USD')}</span>
-            </div>
-            <div class="cost-row">
-              <span>Vetting</span>
-              <span>${formatCurrency(costs.vetting, 'USD')}</span>
-            </div>
-            <div class="cost-row">
-              <span>Transport</span>
-              <span>${formatCurrency(costs.transport, 'USD')}</span>
-            </div>
-            <div class="cost-row">
-              <span>Quarantine</span>
-              <span>${formatCurrency(costs.quarantine, 'USD')}</span>
-            </div>
-            <div class="cost-row">
-              <span>Tariffs</span>
-              <span>${formatCurrency(costs.tariffs, 'USD')}</span>
-            </div>
-            <div class="cost-row">
-              <span>Total Investment (to arrive in California)</span>
-              <span>${formatCurrency(costs.totalInitial, 'USD')}</span>
-            </div>
-          </div>
-
-          <a href="${calculatorUrl}" target="_blank" class="record-link" style="margin-top: 20px; display: inline-block;">
-            Calculate Full Investment ROI →
-          </a>
-        </div>
-
-        <div class="info-section">
           <h3>Expected Resale Value & ROI</h3>
-          <p style="font-size: 0.9rem; opacity: 0.85; margin-bottom: 12px; font-style: italic;">
-            Includes monthly costs: Board (${formatCurrency(defaultMonthlyCosts.board, 'USD')}),
-            Insurance (${formatCurrency(horse.insurance, 'USD')}),
-            Shows (${formatCurrency(defaultMonthlyCosts.shows, 'USD')}),
-            Shoeing every 6 weeks (${formatCurrency(defaultMonthlyCosts.shoeing, 'USD')})
-          </p>
-
           <div class="cost-breakdown">
-            <div class="cost-row">
-              <span>Expected resale value</span>
-              <span><strong>${formatCurrency(expectedResaleUSD, 'USD')}</strong></span>
-            </div>
-
-            <div class="cost-row">
-              <span><strong>If sold in 3 months</strong></span>
-              <span></span>
-            </div>
-            <div class="cost-row">
-              <span>Total Investment</span>
-              <span>${formatCurrency(roi3_expected.totalInvestment, 'USD')}</span>
-            </div>
-            <div class="cost-row">
-              <span>Net Proceeds (after ${(horse.sellerCommission * 100)}% commission)</span>
-              <span>${formatCurrency(roi3_expected.netProceeds, 'USD')}</span>
-            </div>
-            <div class="cost-row">
-              <span>Profit</span>
-              <span style="color: ${roi3_expected.profit >= 0 ? '#4caf50' : '#f44336'}; font-weight: bold;">
-                ${formatCurrency(roi3_expected.profit, 'USD')}
-              </span>
-            </div>
-            <div class="cost-row">
-              <span>ROI</span>
-              <span style="color: ${roi3_expected.roiPercent >= 0 ? '#4caf50' : '#f44336'}; font-weight: bold;">
-                ${roi3_expected.roiPercent.toFixed(1)}%
-              </span>
-            </div>
-
-            <div class="cost-row" style="margin-top: 10px;">
-              <span><strong>If sold in 6 months</strong></span>
-              <span></span>
-            </div>
-            <div class="cost-row">
-              <span>Total Investment</span>
-              <span>${formatCurrency(roi6_expected.totalInvestment, 'USD')}</span>
-            </div>
-            <div class="cost-row">
-              <span>Net Proceeds (after ${(horse.sellerCommission * 100)}% commission)</span>
-              <span>${formatCurrency(roi6_expected.netProceeds, 'USD')}</span>
-            </div>
-            <div class="cost-row">
-              <span>Profit</span>
-              <span style="color: ${roi6_expected.profit >= 0 ? '#4caf50' : '#f44336'}; font-weight: bold;">
-                ${formatCurrency(roi6_expected.profit, 'USD')}
-              </span>
-            </div>
-            <div class="cost-row">
-              <span>ROI</span>
-              <span style="color: ${roi6_expected.roiPercent >= 0 ? '#4caf50' : '#f44336'}; font-weight: bold;">
-                ${roi6_expected.roiPercent.toFixed(1)}%
-              </span>
-            </div>
+            <div class="cost-row"><span>Expected resale value</span><span><strong>${formatCurrency(expectedResaleUSD, 'USD')}</strong></span></div>
+            <div class="cost-row"><span><strong>ROI if sold in 3 months</strong></span><span><strong>${roi3.roiPercent.toFixed(1)}%</strong></span></div>
+            <div class="cost-row"><span><strong>ROI if sold in 6 months</strong></span><span><strong>${roi6.roiPercent.toFixed(1)}%</strong></span></div>
           </div>
         </div>
 
@@ -957,22 +849,19 @@
           <p style="font-size: 0.9rem; opacity: 0.85; margin-bottom: 12px;">
             Investor targets: <strong>20% ROI at 3 months</strong> or <strong>12% ROI at 6 months</strong>
           </p>
-
           <div class="cost-breakdown">
-            <div class="cost-row">
-              <span>Minimum resale @ 3 months (20% ROI)</span>
-              <span><strong>${formatCurrency(req3.requiredResale, 'USD')}</strong></span>
-            </div>
-            <div class="cost-row">
-              <span>Minimum resale @ 6 months (12% ROI)</span>
-              <span><strong>${formatCurrency(req6.requiredResale, 'USD')}</strong></span>
-            </div>
+            <div class="cost-row"><span>Minimum resale @ 3 months (20% ROI)</span><span><strong>${formatCurrency(req3.requiredResale, 'USD')}</strong></span></div>
+            <div class="cost-row"><span>Minimum resale @ 6 months (12% ROI)</span><span><strong>${formatCurrency(req6.requiredResale, 'USD')}</strong></span></div>
           </div>
         </div>
       `;
 
       modal.classList.add('active');
       document.body.style.overflow = 'hidden';
+
+      // Attach scrolling/drag behavior after HTML is injected
+      const wrapper = document.querySelector('.gallery-wrapper');
+      if (wrapper) attachGalleryInteractions(wrapper);
     }
 
     function closeModal() {
