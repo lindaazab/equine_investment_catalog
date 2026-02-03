@@ -293,12 +293,35 @@
 
     .video-title { font-size: 0.9rem; margin-bottom: 10px; font-weight: 500; }
 
-    .image-gallery {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 15px;
-      margin-top: 20px;
-    }
+.image-gallery {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  scroll-snap-type: x mandatory;
+}
+
+.image-gallery::-webkit-scrollbar {
+  height: 8px;
+}
+
+.image-gallery::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.2);
+  border-radius: 4px;
+}
+
+.gallery-image {
+  flex: 0 0 auto;
+  width: 260px;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+  cursor: pointer;
+  scroll-snap-align: center;
+  transition: transform 0.3s ease;
+}
+
 
     .gallery-image {
       width: 100%;
