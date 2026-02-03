@@ -452,10 +452,10 @@
         gender: "Mare",
         age: 10,
         currency: "EUR",
-        price: 80000,            // UPDATED
-        insurance: 300,          // UPDATED
-        sellerCommission: 0.10,  // 10%
-        expectedResale: { usd: 180000 }, // NEW
+        price: 80000,
+        insurance: 300,
+        sellerCommission: 0.10,
+        expectedResale: { usd: 180000 },
         experience: "1.35m FEI Young Riders; 1.40m National GP",
         location: "Ireland",
         cardImage: "RidgeDouglasLady_Pic_1.jpg",
@@ -475,15 +475,76 @@
           tariffs:   { amount: 3000, currency: "USD" }
         }
       },
+
+      // ✅ NEW 3rd horse
+      {
+        name: "Ridge Douglas Lady 2",
+        gender: "Mare",
+        age: 10,
+        currency: "EUR",
+        price: 85000,
+        insurance: 350,
+        sellerCommission: 0.10,
+        expectedResale: { usd: 185000 },
+        experience: "1.35m FEI Young Riders; 1.40m National GP",
+        location: "Ireland",
+        cardImage: "RidgeDouglasLady_Pic_1.jpg",
+        galleryImages: [
+          "RidgeDouglasLady_Pic_1.jpg",
+          "RidgeDouglasLAdy_Breeding.jpg"
+        ],
+        videos: [
+          { title: "Video 1", url: "https://youtu.be/OJ2VYij375Y" },
+          { title: "Video 2", url: "https://youtu.be/bFE4BdW6x6M" }
+        ],
+        notes: "Same profile as Ridge Douglas Lady, priced at €85k with higher insurance and updated expected resale of $185k.",
+        importCosts: {
+          vetting:   { amount: 640,  currency: "EUR" },
+          transport: { amount: 9100, currency: "EUR" },
+          quarantine:{ amount: 10000,currency: "USD" },
+          tariffs:   { amount: 3000, currency: "USD" }
+        }
+      },
+
+      // ✅ NEW 4th horse
+      {
+        name: "Ridge Douglas Lady 3",
+        gender: "Mare",
+        age: 10,
+        currency: "EUR",
+        price: 90000,
+        insurance: 400,
+        sellerCommission: 0.10,
+        expectedResale: { usd: 200000 },
+        experience: "1.35m FEI Young Riders; 1.40m National GP",
+        location: "Ireland",
+        cardImage: "RidgeDouglasLady_Pic_1.jpg",
+        galleryImages: [
+          "RidgeDouglasLady_Pic_1.jpg",
+          "RidgeDouglasLAdy_Breeding.jpg"
+        ],
+        videos: [
+          { title: "Video 1", url: "https://youtu.be/OJ2VYij375Y" },
+          { title: "Video 2", url: "https://youtu.be/bFE4BdW6x6M" }
+        ],
+        notes: "Same profile as Ridge Douglas Lady, priced at €90k with higher insurance and updated expected resale of $200k.",
+        importCosts: {
+          vetting:   { amount: 640,  currency: "EUR" },
+          transport: { amount: 9100, currency: "EUR" },
+          quarantine:{ amount: 10000,currency: "USD" },
+          tariffs:   { amount: 3000, currency: "USD" }
+        }
+      },
+
       {
         name: "Million Rose",
         gender: "Mare",
         age: 8,
         currency: "EUR",
-        price: 100000,           // UPDATED
-        insurance: 350,          // UPDATED
-        sellerCommission: 0.10,  // 10%
-        expectedResale: { usd: 225000 }, // NEW
+        price: 100000,
+        insurance: 350,
+        sellerCommission: 0.10,
+        expectedResale: { usd: 225000 },
         experience: "1.35m FEI 1* Grand Prix",
         location: "Hungary",
         cardImage: "MillionRose_Pic_1.jpeg",
@@ -873,12 +934,10 @@
       document.body.style.overflow = 'auto';
     }
 
-    // Close modal when clicking outside
     document.getElementById('horseModal').addEventListener('click', function(e) {
       if (e.target === this) closeModal();
     });
 
-    // Close modal with Escape key
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') closeModal();
     });
